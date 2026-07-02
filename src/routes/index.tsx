@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 
 export const Route = createFileRoute("/")({ component: Home })
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000"
+const API_URL = ""
 
 type ProcessState =
   | { type: "idle" }

@@ -1,15 +1,59 @@
+import { createReadStream, statSync } from 'node:fs'
 import { createServer } from 'node:http'
+import { extname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   createStartHandler,
   defaultStreamHandler,
 } from '@tanstack/react-start/server'
 
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
+const clientDir = join(__dirname, '../client')
+
+const MIME: Record<string, string> = {
+  '.js': 'application/javascript',
+  '.mjs': 'application/javascript',
+  '.css': 'text/css',
+  '.html': 'text/html',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ico': 'image/x-icon',
+  '.webp': 'image/webp',
+}
+
 const handler = createStartHandler(defaultStreamHandler)
 const port = parseInt(process.env.PORT ?? '3000', 10)
 
 createServer(async (nodeReq, nodeRes) => {
+  const reqPath = nodeReq.url ?? '/'
+
+  // Serve static assets directly from dist/client
+  if (reqPath.startsWith('/assets/') || reqPath === '/favicon.ico') {
+    const filePath = join(clientDir, reqPath)
+    try {
+      const stat = statSync(filePath)
+      if (stat.isFile()) {
+        nodeRes.writeHead(200, {
+          'Content-Type': MIME[extname(filePath)] ?? 'application/octet-stream',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          'Content-Length': stat.size,
+        })
+        createReadStream(filePath).pipe(nodeRes)
+        return
+      }
+    } catch {
+      // not found — fall through to SSR handler
+    }
+  }
+
+  // SSR / API routes
   const host = nodeReq.headers.host ?? 'localhost'
-  const url = `http://${host}${nodeReq.url}`
+  const url = `http://${host}${reqPath}`
 
   const chunks: Buffer[] = []
   for await (const chunk of nodeReq) {

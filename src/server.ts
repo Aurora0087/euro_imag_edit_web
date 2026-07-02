@@ -54,7 +54,7 @@ createServer((nodeReq, nodeRes) => {
       },
     )
     proxyReq.on('error', (err) => {
-      console.error('API proxy error:', err.message)
+      console.error(`API proxy error [${nodeReq.method} ${reqPath} → ${API_URL}]:`, err.message)
       if (!nodeRes.headersSent) {
         nodeRes.writeHead(502)
         nodeRes.end('Bad Gateway')

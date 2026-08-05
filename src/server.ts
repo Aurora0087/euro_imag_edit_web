@@ -33,7 +33,11 @@ if (process.env.TSS_DEV_SERVER !== 'true') {
     '.webp': 'image/webp',
   }
 
-  const API_URL = process.env.API_URL ?? 'http://localhost:8000'
+  // Accept either name: API_URL is the intended runtime var, but VITE_API_URL
+  // is what's commonly already set (it also gets baked into the client build
+  // via the Dockerfile's ARG) — so honor it here too instead of silently
+  // falling back to localhost when only VITE_API_URL is set.
+  const API_URL = process.env.API_URL ?? process.env.VITE_API_URL ?? 'http://localhost:8000'
   const port = parseInt(process.env.PORT ?? '3000', 10)
 
   createServer((nodeReq, nodeRes) => {

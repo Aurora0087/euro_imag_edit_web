@@ -1,10 +1,56 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 
 export const Route = createFileRoute("/")({ component: Home })
 
 const MAX_IMAGES = 5
+const HEALTH_CHECK_INTERVAL_MS = 15_000
+
+type ServerStatus = "checking" | "online" | "offline"
+
+function useServerStatus(): ServerStatus {
+  const [status, setStatus] = useState<ServerStatus>("checking")
+
+  useEffect(() => {
+    let cancelled = false
+
+    const check = async () => {
+      try {
+        const res = await fetch("/health", { cache: "no-store" })
+        if (!cancelled) setStatus(res.ok ? "online" : "offline")
+      } catch {
+        if (!cancelled) setStatus("offline")
+      }
+    }
+
+    check()
+    const id = setInterval(check, HEALTH_CHECK_INTERVAL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
+
+  return status
+}
+
+function ServerStatusBadge() {
+  const status = useServerStatus()
+
+  const { dot, label } = {
+    checking: { dot: "bg-muted-foreground/40 animate-pulse", label: "Checking server…" },
+    online: { dot: "bg-emerald-500", label: "Server online" },
+    offline: { dot: "bg-destructive", label: "Server offline" },
+  }[status]
+
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+      <span className={`size-1.5 rounded-full ${dot}`} />
+      {label}
+    </span>
+  )
+}
 
 type ItemState =
   | { type: "processing" }
@@ -102,7 +148,10 @@ function Home() {
     <main className="min-h-svh bg-background flex flex-col items-center py-14 px-4">
       <div className="w-full max-w-4xl flex flex-col gap-8">
         <header className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Product Image Cleaner</h1>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">Product Image Cleaner</h1>
+            <ServerStatusBadge />
+          </div>
           <p className="text-muted-foreground text-sm">
             Upload up to {MAX_IMAGES} product photos — we remove the background &amp; hands, fix
             low-light, and export clean white-background images ready for your store.

@@ -13,6 +13,10 @@ const config = defineConfig({
         target: process.env.API_URL ?? 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/health': {
+        target: process.env.API_URL ?? 'http://localhost:8000',
+        changeOrigin: true,
+      },
     },
   },
 })

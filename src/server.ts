@@ -39,8 +39,8 @@ if (process.env.TSS_DEV_SERVER !== 'true') {
   createServer((nodeReq, nodeRes) => {
     const reqPath = nodeReq.url ?? '/'
 
-    // Proxy /api/* to the backend service
-    if (reqPath.startsWith('/api/')) {
+    // Proxy /api/* and /health to the backend service
+    if (reqPath.startsWith('/api/') || reqPath === '/health') {
       const target = new URL(reqPath, API_URL)
       const proxyFn = target.protocol === 'https:' ? httpsRequest : httpRequest
       const proxyReq = proxyFn(
